@@ -42,3 +42,23 @@ type SortOption struct {
 	Field string `json:"field"`
 	Order string `json:"order"`
 }
+
+func (t *Task)IsDueToday()bool{
+	if t.DueDate == nil || t.Completed{
+		return  false
+	}
+	now := time.Now()
+	due := *t.DueDate
+
+	return now.Year() == due.Year() && now.YearDay() == due.YearDay()
+}
+
+func(t*Task)IsDueWeek()bool{
+	if t.DueDate == nil || t.Completed{
+		return  false
+	}
+	now := time.Now()
+	due := *t.DueDate
+
+	return now.Year() == due.Year() && now.Month() == due.Month() &&  now.YearDay() == due.YearDay()
+}
