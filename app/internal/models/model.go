@@ -12,7 +12,7 @@ type Task struct {
 	CreatedAt   time.Time  `json:"created_at" db:"created_at"`
 	UpdatedAt   time.Time  `json:"updated_at" db:"updated_at"`
 }
-
+//Проверка на просрочку
 func (t *Task) IsOverDue() bool {
 	if t.DueDate == nil || t.Completed {
 		return false
@@ -42,23 +42,25 @@ type SortOption struct {
 	Field string `json:"field"`
 	Order string `json:"order"`
 }
-
-func (t *Task)IsDueToday()bool{
-	if t.DueDate == nil || t.Completed{
-		return  false
+//Проверка на этот ли день срок
+func (t *Task) IsDueToday() bool {
+	if t.DueDate == nil || t.Completed {
+		return false
 	}
 	now := time.Now()
 	due := *t.DueDate
 
 	return now.Year() == due.Year() && now.YearDay() == due.YearDay()
 }
-
-func(t*Task)IsDueWeek()bool{
-	if t.DueDate == nil || t.Completed{
-		return  false
+//Проверка на этом ли месяце
+func (t *Task) IsDueWeek() bool {
+	if t.DueDate == nil || t.Completed {
+		return false
 	}
 	now := time.Now()
 	due := *t.DueDate
+	_, currentWeek := now.ISOWeek()
+	_, dueWeek := due.ISOWeek()
 
-	return now.Year() == due.Year() && now.Month() == due.Month() &&  now.YearDay() == due.YearDay()
+	return now.Year() == due.Year() && currentWeek == dueWeek
 }
