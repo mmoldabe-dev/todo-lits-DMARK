@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"os"
+	"path/filepath"
 	"todo-lits-DMARK/app/internal/config"
 
 	"github.com/golang-migrate/migrate/v4"
@@ -31,21 +33,40 @@ func New(cfg *config.Config) (*Database, error) {
 
 	database := &Database{DB: db}
 
-	if err := database.RunMigrations(cfg.GetDSN()); err != nil {
+	if err := database.RunMigrations(); err != nil {
 		log.Printf("Warning: failed to run migrations: %v", err)
 	}
 
 	return database, nil
 }
 
-func (d *Database) RunMigrations(dsn string) error {
+func (d *Database) RunMigrations() error {
 	driver, err := postgres.WithInstance(d.DB, &postgres.Config{})
 	if err != nil {
 		return fmt.Errorf("could not create postgres driver: %w", err)
 	}
 
+	migrationPath := os.Getenv("MIGRATION_PATH")
+	if migrationPath == "" {
+
+		if wd, err := os.Getwd(); err == nil {
+
+			appMigrations := filepath.Join(wd, "app", "migrations")
+			if _, err := os.Stat(appMigrations); err == nil {
+				migrationPath = "file://app/migrations"
+			} else {
+
+				migrationPath = "file://migrations"
+			}
+		} else {
+			migrationPath = "file://migrations"
+		}
+	}
+
+	log.Printf("Using migration path: %s", migrationPath)
+
 	m, err := migrate.NewWithDatabaseInstance(
-		"file://migrations",
+		migrationPath,
 		"postgres", driver,
 	)
 	if err != nil {
@@ -56,6 +77,7 @@ func (d *Database) RunMigrations(dsn string) error {
 		return fmt.Errorf("could not run migrations: %w", err)
 	}
 
+	log.Println("Migrations completed successfully")
 	return nil
 }
 
