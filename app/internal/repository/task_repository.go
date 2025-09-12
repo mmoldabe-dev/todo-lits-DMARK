@@ -49,7 +49,7 @@ func (r *TaskRepository) GetByID(id int) (*models.Task, error) {
 	task := &models.Task{}
 
 	query := `
-        SELECT id, title, description, status, priorit	y, due_date, created_at, updated_at
+       SELECT id, title, description, status, priority, due_date, created_at, updated_at
         FROM tasks
         WHERE id = $1
     `
