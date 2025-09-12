@@ -1,7 +1,4 @@
-version: '3.8'
-
 services:
-
   postgres:
     image: postgres:15-alpine
     container_name: todoapp_postgres
@@ -9,42 +6,18 @@ services:
       POSTGRES_DB: todoapp
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_HOST_AUTH_METHOD: trust
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./migrations/001_create_tasks_table.up.sql:/docker-entrypoint-initdb.d/001_init.sql
     networks:
       - todoapp_network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d todoapp"]
       interval: 10s
       timeout: 5s
       retries: 5
-
-  todoapp:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: todoapp_backend
-    environment:
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_USER: postgres
-      DB_PASSWORD: postgres
-      DB_NAME: todoapp
-      DB_SSL_MODE: disable
-      APP_ENV: production
-    ports:
-      - "8080:8080"
-    depends_on:
-      postgres:
-        condition: service_healthy
-    networks:
-      - todoapp_network
-    volumes:
-      - ./migrations:/app/migrations
     restart: unless-stopped
 
   pgadmin:
