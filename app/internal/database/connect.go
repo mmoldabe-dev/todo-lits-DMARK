@@ -1,34 +1,68 @@
 package database
 
 import (
-	"database/sql"
 	"fmt"
 	"log"
 	"todo-lits-DMARK/app/internal/config"
 
+	"github.com/golang-migrate/migrate/v4"
+	"github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
+	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 )
 
-var DB *sql.DB
+type Database struct {
+	DB *sqlx.DB
+}
 
-// Подключение к бд
-func Connect() {
-	cfg := config.AppConfig
-	dsn := fmt.Sprintf(
-		"host=localhost port=%s user=%s password=%s dbname=%s sslmode=disable",
-		cfg.DBPort, cfg.DBUser, cfg.DBPassword, cfg.DBName,
-	)
-
-	db, err := sql.Open("postgres", dsn)
+func New(cfg *config.Config) (*Database, error) {
+	db, err := sqlx.Connect("postgres", cfg.GetDSN())
 	if err != nil {
-		log.Fatal("Failed to open database:", err)
+		return nil, fmt.Errorf("failed to connect to database: %w", err)
 	}
 
-	// Проверяем соединение
+	db.SetMaxOpenConns(25)
+	db.SetMaxIdleConns(25)
+
 	if err := db.Ping(); err != nil {
-		log.Fatal("Failed to ping database:", err)
+		return nil, fmt.Errorf("failed to ping database: %w", err)
 	}
 
-	DB = db
-	log.Println("Database connected successfully")
+	database := &Database{DB: db}
+
+	if err := database.RunMigrations(cfg.GetDSN()); err != nil {
+		log.Printf("Warning: failed to run migrations: %v", err)
+	}
+
+	return database, nil
+}
+
+func (d *Database) RunMigrations(dsn string) error {
+	driver, err := postgres.WithInstance(d.DB.DB, &postgres.Config{})
+	if err != nil {
+		return fmt.Errorf("could not create postgres driver: %w", err)
+	}
+
+	m, err := migrate.NewWithDatabaseInstance(
+		"file://migrations",
+		"postgres", driver,
+	)
+	if err != nil {
+		return fmt.Errorf("could not create migrate instance: %w", err)
+	}
+
+	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
+		return fmt.Errorf("could not run migrations: %w", err)
+	}
+
+	return nil
+}
+
+func (d *Database) Close() error {
+	return d.DB.Close()
+}
+
+func (d *Database) Health() error {
+	return d.DB.Ping()
 }
