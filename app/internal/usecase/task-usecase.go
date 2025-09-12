@@ -63,7 +63,6 @@ func (uc *taskUsecase) GetTask(id int) (*models.Task, error) {
 	return uc.taskService.GetTask(id)
 }
 
-
 func (uc *taskUsecase) GetTasks(status string, priority string, sortBy string, sortOrder string) ([]*models.Task, error) {
 
 	filter := &models.TaskFilter{}
@@ -93,9 +92,8 @@ func (uc *taskUsecase) GetTasks(status string, priority string, sortBy string, s
 	return uc.taskService.GetAllTasks(filter, sort)
 }
 
-
 func (uc *taskUsecase) UpdateTask(id int, updates *models.UpdateTaskRequest) (*models.Task, error) {
-	
+
 	if updates.Title != nil {
 		title := strings.TrimSpace(*updates.Title)
 		if title == "" {
@@ -116,16 +114,13 @@ func (uc *taskUsecase) UpdateTask(id int, updates *models.UpdateTaskRequest) (*m
 	return uc.taskService.UpdateTask(id, updates)
 }
 
-
 func (uc *taskUsecase) DeleteTask(id int) error {
 	return uc.taskService.DeleteTask(id)
 }
 
-
 func (uc *taskUsecase) ToggleTaskComplete(id int) (*models.Task, error) {
 	return uc.taskService.ToggleTaskStatus(id)
 }
-
 
 func (uc *taskUsecase) GetTasksByDateRange(dateFilter string) ([]*models.Task, error) {
 	validFilters := map[string]bool{
@@ -141,4 +136,115 @@ func (uc *taskUsecase) GetTasksByDateRange(dateFilter string) ([]*models.Task, e
 	return uc.taskService.GetTasksByDateFilter(dateFilter)
 }
 
+func (uc *taskUsecase) GetDashboardData() (*DashboardData, error) {
 
+	stats, err := uc.taskService.GetTaskStats()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get task stats: %w", err)
+	}
+
+	recentSort := &models.TaskSort{Field: "created_at", Order: "desc"}
+	allTasks, err := uc.taskService.GetAllTasks(nil, recentSort)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get recent tasks: %w", err)
+	}
+
+	var recentTasks []*models.Task
+	if len(allTasks) > 5 {
+		recentTasks = allTasks[:5]
+	} else {
+		recentTasks = allTasks
+	}
+
+	overdueTasks, err := uc.taskService.GetOverdueTasks()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get overdue tasks: %w", err)
+	}
+
+	todayTasks, err := uc.taskService.GetTasksByDateFilter("today")
+	if err != nil {
+		return nil, fmt.Errorf("failed to get today tasks: %w", err)
+	}
+
+	upcomingTasks, err := uc.taskService.GetTasksByDateFilter("week")
+	if err != nil {
+		return nil, fmt.Errorf("failed to get upcoming tasks: %w", err)
+	}
+
+	var filteredUpcoming []*models.Task
+	today := time.Now().Format("2006-01-02")
+
+	for _, task := range upcomingTasks {
+		if task.DueDate != nil && task.DueDate.Format("2006-01-02") != today {
+			filteredUpcoming = append(filteredUpcoming, task)
+		}
+	}
+
+	return &DashboardData{
+		Stats:         stats,
+		RecentTasks:   recentTasks,
+		OverdueTasks:  overdueTasks,
+		TodayTasks:    todayTasks,
+		UpcomingTasks: filteredUpcoming,
+	}, nil
+}
+
+func (uc *taskUsecase) SearchTasks(query string) ([]*models.Task, error) {
+	if strings.TrimSpace(query) == "" {
+		return nil, fmt.Errorf("search query cannot be empty")
+	}
+
+	allTasks, err := uc.taskService.GetAllTasks(nil, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to search tasks: %w", err)
+	}
+
+	var matchedTasks []*models.Task
+	query = strings.ToLower(strings.TrimSpace(query))
+
+	for _, task := range allTasks {
+
+		if strings.Contains(strings.ToLower(task.Title), query) ||
+			strings.Contains(strings.ToLower(task.Description), query) {
+			matchedTasks = append(matchedTasks, task)
+		}
+	}
+
+	return matchedTasks, nil
+}
+
+func (uc *taskUsecase) BulkUpdateTasks(ids []int, updates *models.UpdateTaskRequest) error {
+	if len(ids) == 0 {
+		return fmt.Errorf("no task IDs provided")
+	}
+
+	if updates.Title != nil {
+		title := strings.TrimSpace(*updates.Title)
+		if title == "" {
+			return fmt.Errorf("task title cannot be empty")
+		}
+		updates.Title = &title
+	}
+
+	if updates.Description != nil {
+		description := strings.TrimSpace(*updates.Description)
+		updates.Description = &description
+	}
+
+	if updates.DueDate != nil && updates.DueDate.Before(time.Now()) {
+		return fmt.Errorf("due date cannot be in the past")
+	}
+
+	var errors []string
+	for _, id := range ids {
+		if _, err := uc.taskService.UpdateTask(id, updates); err != nil {
+			errors = append(errors, fmt.Sprintf("failed to update task %d: %v", id, err))
+		}
+	}
+
+	if len(errors) > 0 {
+		return fmt.Errorf("bulk update failed: %s", strings.Join(errors, "; "))
+	}
+
+	return nil
+}

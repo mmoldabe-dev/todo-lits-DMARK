@@ -1,6 +1,7 @@
 package database
 
 import (
+	"database/sql"
 	"fmt"
 	"log"
 	"todo-lits-DMARK/app/internal/config"
@@ -8,16 +9,15 @@ import (
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
-	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 )
 
 type Database struct {
-	DB *sqlx.DB
+	DB *sql.DB
 }
 
 func New(cfg *config.Config) (*Database, error) {
-	db, err := sqlx.Connect("postgres", cfg.GetDSN())
+	db, err := sql.Open("postgres", cfg.GetDSN())
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to database: %w", err)
 	}
@@ -39,7 +39,7 @@ func New(cfg *config.Config) (*Database, error) {
 }
 
 func (d *Database) RunMigrations(dsn string) error {
-	driver, err := postgres.WithInstance(d.DB.DB, &postgres.Config{})
+	driver, err := postgres.WithInstance(d.DB, &postgres.Config{})
 	if err != nil {
 		return fmt.Errorf("could not create postgres driver: %w", err)
 	}
