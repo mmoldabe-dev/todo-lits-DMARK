@@ -2,7 +2,6 @@ import './style.css';
 import './app.css';
 import * as App from '../wailsjs/go/app/App';
 
-
 // Application state
 class TodoApp {
     constructor() {
@@ -54,8 +53,7 @@ class TodoApp {
         this.elements.saveTaskBtn = document.getElementById('saveTaskBtn');
         this.elements.cancelEditBtn = document.getElementById('cancelEditBtn');
         
-        // Search and filters
-        this.elements.searchInput = document.getElementById('searchInput');
+        // Filters only (no search)
         this.elements.statusFilter = document.getElementById('statusFilter');
         this.elements.priorityFilter = document.getElementById('priorityFilter');
         this.elements.dateFilter = document.getElementById('dateFilter');
@@ -96,8 +94,7 @@ class TodoApp {
         this.elements.saveTaskBtn.addEventListener('click', () => this.saveTask());
         this.elements.cancelEditBtn.addEventListener('click', () => this.cancelEdit());
         
-        // Search and filters
-        this.elements.searchInput.addEventListener('input', () => this.debounce(() => this.filterTasks(), 300));
+        // Filters only (removed search functionality)
         this.elements.statusFilter.addEventListener('change', () => this.filterTasks());
         this.elements.priorityFilter.addEventListener('change', () => this.filterTasks());
         this.elements.dateFilter.addEventListener('change', () => this.filterTasks());
@@ -178,11 +175,18 @@ class TodoApp {
             content.classList.toggle('active', content.id === `${tabName}-tab`);
         });
         
-        // Load data for active tab
         if (tabName === 'dashboard') {
-            this.loadDashboardData();
+            this.loadDashboardData().then(() => {
+                requestAnimationFrame(() => {
+                    this.forceUIUpdate();
+                });
+            });
         } else if (tabName === 'tasks') {
-            this.loadTasks();
+            this.loadTasks().then(() => {
+                requestAnimationFrame(() => {
+                    this.forceUIUpdate();
+                });
+            });
         }
     }
 
@@ -267,7 +271,7 @@ class TodoApp {
         `).join('');
     }
 
-    // Load tasks
+    // Load tasks (no search filtering)
     async loadTasks() {
         if (this.isLoading) return;
         
@@ -296,17 +300,12 @@ class TodoApp {
                 tasks = await App.GetTasks(status, priority, sortBy, sortOrder);
             }
             
-            // Apply search filter
-            const searchQuery = this.elements.searchInput.value.toLowerCase().trim();
-            if (searchQuery) {
-                tasks = tasks.filter(task => 
-                    task.title.toLowerCase().includes(searchQuery) ||
-                    task.description.toLowerCase().includes(searchQuery)
-                );
-            }
-            
             this.tasks = tasks || [];
-            this.renderTasks();
+            
+            // Use requestAnimationFrame for guaranteed rerender
+            requestAnimationFrame(() => {
+                this.renderTasks();
+            });
             
         } catch (error) {
             console.error('Error loading tasks:', error);
@@ -321,8 +320,13 @@ class TodoApp {
         this.loadTasks();
     }
 
-    // Render tasks
-    renderTasks() {
+    // Force UI update
+    forceUIUpdate() {
+        // Clear containers before updating
+        this.elements.activeTasksList.innerHTML = '';
+        this.elements.completedTasksList.innerHTML = '';
+        
+        // Render tasks again
         const activeTasks = this.tasks.filter(task => task.status === 'pending');
         const completedTasks = this.tasks.filter(task => task.status === 'completed');
         
@@ -332,6 +336,22 @@ class TodoApp {
         // Update counters
         this.elements.activeTaskCount.textContent = activeTasks.length;
         this.elements.completedTaskCount.textContent = completedTasks.length;
+    }
+
+    // Render tasks
+    renderTasks() {
+        // Use requestAnimationFrame for guaranteed rerender
+        requestAnimationFrame(() => {
+            const activeTasks = this.tasks.filter(task => task.status === 'pending');
+            const completedTasks = this.tasks.filter(task => task.status === 'completed');
+            
+            this.renderTaskList(activeTasks, this.elements.activeTasksList);
+            this.renderTaskList(completedTasks, this.elements.completedTasksList);
+            
+            // Update counters
+            this.elements.activeTaskCount.textContent = activeTasks.length;
+            this.elements.completedTaskCount.textContent = completedTasks.length;
+        });
     }
 
     // Render task list
@@ -391,7 +411,7 @@ class TodoApp {
         `;
     }
 
-    // Save task (create or update)
+    // Save task with forced UI update
     async saveTask() {
         const title = this.elements.taskTitle.value.trim();
         const description = this.elements.taskDescription.value.trim();
@@ -442,8 +462,15 @@ class TodoApp {
             }
             
             this.clearForm();
-            await this.loadTasks();
-            await this.loadDashboardData();
+            
+            // Force update all data
+            await Promise.all([
+                this.loadTasks(),
+                this.loadDashboardData()
+            ]);
+            
+            // Force UI update
+            this.forceUIUpdate();
             
         } catch (error) {
             console.error('Error saving task:', error);
@@ -510,7 +537,7 @@ class TodoApp {
         this.currentEditId = null;
     }
 
-    // Toggle task status
+    // Toggle task status with forced UI update
     async toggleTaskStatus(taskId) {
         this.setLoading(true);
         
@@ -518,8 +545,13 @@ class TodoApp {
             await App.ToggleTaskComplete(taskId);
             this.showToast('Статус задачи изменен', 'success');
             
-            await this.loadTasks();
-            await this.loadDashboardData();
+            // Update data and force UI update
+            await Promise.all([
+                this.loadTasks(),
+                this.loadDashboardData()
+            ]);
+            
+            this.forceUIUpdate();
             
         } catch (error) {
             console.error('Error toggling task status:', error);
@@ -545,7 +577,7 @@ class TodoApp {
         this.currentDeleteId = null;
     }
 
-    // Confirm delete
+    // Confirm delete with forced UI update
     async confirmDelete() {
         if (!this.currentDeleteId) return;
         
@@ -556,8 +588,14 @@ class TodoApp {
             this.showToast('Задача удалена', 'success');
             
             this.hideDeleteModal();
-            await this.loadTasks();
-            await this.loadDashboardData();
+            
+            // Update data and force UI update
+            await Promise.all([
+                this.loadTasks(),
+                this.loadDashboardData()
+            ]);
+            
+            this.forceUIUpdate();
             
         } catch (error) {
             console.error('Error deleting task:', error);
