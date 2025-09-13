@@ -3,8 +3,8 @@ package service
 import (
 	"fmt"
 	"time"
-	"todo-lits-DMARK/app/internal/models"
-	"todo-lits-DMARK/app/internal/repository"
+	"todo-lits-DMARK/app/pkg/models"
+	"todo-lits-DMARK/app/pkg/repository"
 
 	"github.com/go-playground/validator/v10"
 )
@@ -159,10 +159,10 @@ func (s *taskService) GetTasksByDateFilter(dateFilter string) ([]*models.Task, e
 		from = time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
 		to = from.Add(24 * time.Hour).Add(-time.Second)
 	case "week":
-	
+
 		weekday := int(now.Weekday())
 		if weekday == 0 {
-			weekday = 7 
+			weekday = 7
 		}
 		from = now.AddDate(0, 0, -(weekday - 1))
 		from = time.Date(from.Year(), from.Month(), from.Day(), 0, 0, 0, 0, from.Location())

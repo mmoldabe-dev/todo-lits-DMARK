@@ -1,6 +1,6 @@
 package service
 
-import "todo-lits-DMARK/app/internal/models"
+import "todo-lits-DMARK/app/pkg/models"
 
 type TaskService interface {
 	CreateTask(req *models.CreateTaskRequest) (*models.Task, error)

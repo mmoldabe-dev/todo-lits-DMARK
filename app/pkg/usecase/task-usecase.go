@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 	"time"
-	"todo-lits-DMARK/app/internal/models"
-	"todo-lits-DMARK/app/internal/service"
+	"todo-lits-DMARK/app/pkg/models"
+	"todo-lits-DMARK/app/pkg/service"
 )
 
 type TaskUsecase interface {

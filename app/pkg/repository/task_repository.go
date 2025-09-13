@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 	"time"
-	"todo-lits-DMARK/app/internal/models"
+	"todo-lits-DMARK/app/pkg/models"
 )
 
 type TaskRepository struct {

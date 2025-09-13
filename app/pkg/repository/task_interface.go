@@ -2,7 +2,7 @@ package repository
 
 import (
 	"time"
-	"todo-lits-DMARK/app/internal/models"
+	"todo-lits-DMARK/app/pkg/models"
 )
 
 type TaskRepositoryInterface interface {

@@ -1,54 +1,208 @@
-#logo {
-    display: block;
-    width: 50%;
-    height: 50%;
-    margin: auto;
-    padding: 10% 0 0;
-    background-position: center;
-    background-repeat: no-repeat;
-    background-size: 100% 100%;
-    background-origin: content-box;
+/* Simplified App-specific styles and animations */
+
+/* Basic animations */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
-.result {
-    height: 20px;
-    line-height: 20px;
-    margin: 1.5rem auto;
+@keyframes slideInRight {
+    from {
+        opacity: 0;
+        transform: translateX(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
 }
 
-.input-box .btn {
-    width: 60px;
-    height: 30px;
-    line-height: 30px;
-    border-radius: 3px;
-    border: none;
-    margin: 0 0 0 20px;
-    padding: 0 8px;
-    cursor: pointer;
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.7;
+    }
 }
 
-.input-box .btn:hover {
-    background-image: linear-gradient(to top, #cfd9df 0%, #e2ebf0 100%);
-    color: #333333;
+/* Task animations */
+.task-item {
+    animation: fadeIn 0.3s ease;
 }
 
-.input-box .input {
-    border: none;
-    border-radius: 3px;
-    outline: none;
-    height: 30px;
-    line-height: 30px;
-    padding: 0 10px;
-    background-color: rgba(240, 240, 240, 1);
-    -webkit-font-smoothing: antialiased;
+/* Loading states */
+.loading {
+    opacity: 0.6;
+    pointer-events: none;
+    position: relative;
 }
 
-.input-box .input:hover {
-    border: none;
-    background-color: rgba(255, 255, 255, 1);
+.loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 16px;
+    height: 16px;
+    margin: -8px 0 0 -8px;
+    border: 2px solid var(--border);
+    border-top: 2px solid var(--primary);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
 }
 
-.input-box .input:focus {
-    border: none;
-    background-color: rgba(255, 255, 255, 1);
+/* Hover effects */
+.stat-card:hover {
+    transform: translateY(-2px);
+}
+
+.action-btn:hover,
+.btn:hover {
+    transform: translateY(-1px);
+}
+
+/* Focus states */
+.form-input:focus,
+.form-textarea:focus,
+.form-select:focus,
+.search-input:focus,
+.filter-select:focus {
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.btn:focus,
+.action-btn:focus,
+.task-action-btn:focus,
+.theme-toggle:focus,
+.tab-btn:focus {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+}
+
+/* Priority indicators with emojis */
+.task-priority.high::before {
+    content: '🔥';
+    margin-right: 4px;
+}
+
+.task-priority.medium::before {
+    content: '⚡';
+    margin-right: 4px;
+}
+
+.task-priority.low::before {
+    content: '🌱';
+    margin-right: 4px;
+}
+
+/* Status indicators */
+.task-item.completed .task-checkbox {
+    background: var(--success);
+    border-color: var(--success);
+}
+
+.task-item.overdue::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: var(--danger);
+    border-radius: 0 2px 2px 0;
+}
+
+/* Form validation */
+.form-input:invalid {
+    border-color: var(--danger);
+}
+
+.form-input:valid {
+    border-color: var(--success);
+}
+
+/* Dashboard animations */
+.dashboard-grid > * {
+    animation: fadeIn 0.4s ease;
+}
+
+.dashboard-grid > *:nth-child(1) { animation-delay: 0.1s; }
+.dashboard-grid > *:nth-child(2) { animation-delay: 0.2s; }
+.dashboard-grid > *:nth-child(3) { animation-delay: 0.3s; }
+.dashboard-grid > *:nth-child(4) { animation-delay: 0.4s; }
+
+/* Mobile responsive adjustments */
+@media (max-width: 480px) {
+    .stat-number {
+        font-size: 1.5rem;
+    }
+    
+    .app-title {
+        font-size: 1.2rem;
+    }
+    
+    .task-title {
+        font-size: 0.9rem;
+    }
+}
+
+/* Print styles */
+@media print {
+    .app-header,
+    .tab-navigation,
+    .add-task-section,
+    .controls-section,
+    .task-actions,
+    .theme-toggle {
+        display: none !important;
+    }
+    
+    .task-item {
+        break-inside: avoid;
+        border: 1px solid #ccc;
+        margin-bottom: 0.5rem;
+        page-break-inside: avoid;
+    }
+}
+
+/* Dark theme specific adjustments */
+[data-theme="dark"] .task-item:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] .stat-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+/* Accessibility improvements */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+    
+    .loading-spinner {
+        animation: none;
+    }
+}
+
+/* High contrast support */
+@media (prefers-contrast: high) {
+    :root {
+        --border: #000000;
+    }
+    
+    [data-theme="dark"] {
+        --border: #ffffff;
+    }
 }

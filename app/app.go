@@ -1,23 +1,16 @@
-package main
+package app
 
 import (
 	"context"
-	"embed"
 	"log"
 	"time"
-	"todo-lits-DMARK/app/internal/config"
-	"todo-lits-DMARK/app/internal/database"
-	"todo-lits-DMARK/app/internal/models"
-	"todo-lits-DMARK/app/internal/repository"
-	"todo-lits-DMARK/app/internal/service"
-	"todo-lits-DMARK/app/internal/usecase"
-
-	"github.com/wailsapp/wails/v2"
-	"github.com/wailsapp/wails/v2/pkg/options"
-	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
+	"todo-lits-DMARK/app/pkg/config"
+	"todo-lits-DMARK/app/pkg/database"
+	"todo-lits-DMARK/app/pkg/models"
+	"todo-lits-DMARK/app/pkg/repository"
+	"todo-lits-DMARK/app/pkg/service"
+	"todo-lits-DMARK/app/pkg/usecase"
 )
-
-var assets embed.FS
 
 type App struct {
 	ctx         context.Context
@@ -29,7 +22,7 @@ func NewApp() *App {
 	return &App{}
 }
 
-func (a *App) startup(ctx context.Context) {
+func (a *App) OnStartup(ctx context.Context) {
 	a.ctx = ctx
 	log.Println("TodoApp is starting...")
 
@@ -53,7 +46,7 @@ func (a *App) startup(ctx context.Context) {
 	log.Println("Application started successfully")
 }
 
-func (a *App) shutdown(ctx context.Context) {
+func (a *App) OnShutdown(ctx context.Context) {
 	log.Println("TodoApp is shutting down...")
 	if a.db != nil {
 		if err := a.db.Close(); err != nil {
@@ -334,24 +327,4 @@ func (a *App) GetTasksByDateFilter(filter string) ([]map[string]interface{}, err
 	}
 
 	return result, nil
-}
-
-func main() {
-	app := NewApp()
-
-	err := wails.Run(&options.App{
-		Title:  "TodoApp - Task Management",
-		Width:  1024,
-		Height: 768,
-		AssetServer: &assetserver.Options{
-			Assets: assets,
-		},
-		BackgroundColour: &options.RGBA{R: 27, G: 38, B: 54, A: 1},
-		OnStartup:        app.startup,
-		OnShutdown:       app.shutdown,
-	})
-
-	if err != nil {
-		log.Printf("Error starting application: %v", err)
-	}
 }
