@@ -4,7 +4,7 @@ import (
 	"embed"
 	"log"
 
-	"todo-lits-DMARK/app" // <-- импорт пакета app
+	"todo-lits-DMARK/app"
 
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
@@ -28,7 +28,7 @@ func main() {
 		OnStartup:        appInstance.OnStartup,
 		OnShutdown:       appInstance.OnShutdown,
 		Bind: []interface{}{
-			appInstance, // <- это обязательно, чтобы Wails сгенерировал биндинги
+			appInstance,
 		},
 	})
 
