@@ -18,15 +18,22 @@ func main() {
 	appInstance := app.NewApp()
 
 	err := wails.Run(&options.App{
-		Title:  "TodoApp - Task Management",
-		Width:  1024,
-		Height: 768,
+		Title:     "TodoApp - Task Management",
+		Width:     1200,
+		Height:    800,
+		MinWidth:  800,
+		MinHeight: 600,
+		MaxWidth:  1600,
+		MaxHeight: 1200,
+
+		Fullscreen: false,
 		AssetServer: &assetserver.Options{
 			Assets: assets,
 		},
 		BackgroundColour: &options.RGBA{R: 27, G: 38, B: 54, A: 1},
 		OnStartup:        appInstance.OnStartup,
 		OnShutdown:       appInstance.OnShutdown,
+
 		Bind: []interface{}{
 			appInstance,
 		},
