@@ -8,10 +8,51 @@
 </head>
 <body>
 
-    <div id="loading" class="loading-screen">
-        <div class="loading-spinner"></div>
-        <p>Загрузка TodoApp...</p>
+  <div id="loading" class="loading-screen">
+    <div class="loading-spinner"></div>
+    <p>Загрузка TodoApp...</p>
+</div>
+
+<!-- Warning Modal (appears on startup) -->
+<div id="warningModal" class="modal show">
+    <div class="modal-content" style="max-width: 550px;">
+        <div class="modal-header">
+            <h3 style="color: var(--warning); display: flex; align-items: center; gap: 0.5rem;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width: 24px; height: 24px;">
+                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                    <line x1="12" y1="9" x2="12" y2="13"/>
+                    <line x1="12" y1="17" x2="12.01" y2="17"/>
+                </svg>
+                Важное уведомление о работе приложения
+            </h3>
+        </div>
+        <div class="modal-body">
+            <p style="margin-bottom: 1rem; color: var(--text); font-weight: 600;">
+                ⚠️ Внимание! В приложении есть известная проблема с обновлением интерфейса.
+            </p>
+            <p style="margin-bottom: 1rem; color: var(--text-secondary);">
+                После выполнения операций (создание, редактирование, удаление задач или изменение статуса) 
+                изменения могут НЕ отображаться сразу в интерфейсе.
+            </p>
+            <div style="background: var(--bg-secondary); padding: 1rem; border-radius: var(--radius); border-left: 4px solid var(--warning); margin-bottom: 1rem;">
+                <p style="color: var(--text); font-weight: 600; margin-bottom: 0.5rem;">
+                     Как исправить проблему:
+                </p>
+                <p style="color: var(--text-secondary); margin-bottom: 0.5rem;">
+                    • Переключайтесь между вкладками <strong>"Дашборд"</strong> и <strong>"Задачи"</strong> 
+                    для обновления отображаемых данных
+                </p>
+                <p style="color: var(--text-secondary);">
+                    • Если данные не обновились - повторите переключение еще раз
+                </p>
+            </div>
+            <p style="color: var(--text-secondary); font-size: 0.875rem; font-style: italic;">
+               Для продолжения работы кликните за пределами уведомления.
+            </p>
+        </div>
+        
     </div>
+</div>
 
     <!-- Main App Container -->
     <div id="app" class="app-container" style="display: none;">

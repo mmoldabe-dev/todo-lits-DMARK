@@ -8,6 +8,7 @@ class TodoApp {
         this.tasks = [];
         this.currentEditId = null;
         this.isLoading = false;
+        this.currentTab = 'dashboard'; // Отслеживание текущей вкладки
         
         // DOM elements
         this.elements = {};
@@ -53,7 +54,7 @@ class TodoApp {
         this.elements.saveTaskBtn = document.getElementById('saveTaskBtn');
         this.elements.cancelEditBtn = document.getElementById('cancelEditBtn');
         
-        // Filters only (no search)
+        // Filters
         this.elements.statusFilter = document.getElementById('statusFilter');
         this.elements.priorityFilter = document.getElementById('priorityFilter');
         this.elements.dateFilter = document.getElementById('dateFilter');
@@ -94,7 +95,7 @@ class TodoApp {
         this.elements.saveTaskBtn.addEventListener('click', () => this.saveTask());
         this.elements.cancelEditBtn.addEventListener('click', () => this.cancelEdit());
         
-        // Filters only (removed search functionality)
+        // Filters
         this.elements.statusFilter.addEventListener('change', () => this.filterTasks());
         this.elements.priorityFilter.addEventListener('change', () => this.filterTasks());
         this.elements.dateFilter.addEventListener('change', () => this.filterTasks());
@@ -163,8 +164,10 @@ class TodoApp {
         }
     }
 
-    // Switch tabs
-    switchTab(tabName) {
+    // Switch tabs with improved data loading
+    async switchTab(tabName) {
+        this.currentTab = tabName;
+        
         // Update tab buttons
         this.elements.tabBtns.forEach(btn => {
             btn.classList.toggle('active', btn.dataset.tab === tabName);
@@ -175,18 +178,20 @@ class TodoApp {
             content.classList.toggle('active', content.id === `${tabName}-tab`);
         });
         
-        if (tabName === 'dashboard') {
-            this.loadDashboardData().then(() => {
-                requestAnimationFrame(() => {
-                    this.forceUIUpdate();
-                });
-            });
-        } else if (tabName === 'tasks') {
-            this.loadTasks().then(() => {
-                requestAnimationFrame(() => {
-                    this.forceUIUpdate();
-                });
-            });
+        // Load data for the active tab
+        await this.refreshCurrentTabData();
+    }
+
+    // Refresh data for current tab
+    async refreshCurrentTabData() {
+        try {
+            if (this.currentTab === 'dashboard') {
+                await this.loadDashboardData();
+            } else if (this.currentTab === 'tasks') {
+                await this.loadTasks();
+            }
+        } catch (error) {
+            console.error('Error refreshing tab data:', error);
         }
     }
 
@@ -225,15 +230,18 @@ class TodoApp {
 
     // Update dashboard stats
     updateDashboardStats(stats) {
-        this.elements.totalTasks.textContent = stats.total;
-        this.elements.pendingTasks.textContent = stats.pending;
-        this.elements.completedTasks.textContent = stats.completed;
-        this.elements.overdueTasks.textContent = stats.overdue;
+        if (this.elements.totalTasks) {
+            this.elements.totalTasks.textContent = stats.total;
+            this.elements.pendingTasks.textContent = stats.pending;
+            this.elements.completedTasks.textContent = stats.completed;
+            this.elements.overdueTasks.textContent = stats.overdue;
+        }
     }
 
     // Render recent tasks
     renderRecentTasks(tasks) {
         const container = this.elements.recentTasksList;
+        if (!container) return;
         
         if (!tasks || tasks.length === 0) {
             container.innerHTML = '<div class="empty-state">Нет последних задач</div>';
@@ -254,6 +262,7 @@ class TodoApp {
     // Render overdue tasks
     renderOverdueTasks(tasks) {
         const container = this.elements.overdueTasksList;
+        if (!container) return;
         
         if (!tasks || tasks.length === 0) {
             container.innerHTML = '<div class="empty-state">Нет просроченных задач</div>';
@@ -265,28 +274,28 @@ class TodoApp {
                 <div class="task-title-mini">${this.escapeHtml(task.title)}</div>
                 <div class="task-meta-mini">
                     <span class="priority-${task.priority}">${this.getPriorityLabel(task.priority)}</span>
-                    • <span style="color: var(--danger-color);">Просрочено</span>
+                    • <span style="color: var(--danger);">Просрочено</span>
                 </div>
             </div>
         `).join('');
     }
 
-    // Load tasks (no search filtering)
+    // Load tasks with better error handling
     async loadTasks() {
         if (this.isLoading) return;
         
         this.setLoading(true);
         
         try {
-            const status = this.elements.statusFilter.value;
-            const priority = this.elements.priorityFilter.value;
-            const sortBy = this.elements.sortBy.value;
-            const sortOrder = this.elements.sortOrder.value;
+            const status = this.elements.statusFilter?.value || '';
+            const priority = this.elements.priorityFilter?.value || '';
+            const sortBy = this.elements.sortBy?.value || 'created_at';
+            const sortOrder = this.elements.sortOrder?.value || 'desc';
             
             let tasks;
             
             // Check if date filter is applied
-            const dateFilter = this.elements.dateFilter.value;
+            const dateFilter = this.elements.dateFilter?.value || '';
             if (dateFilter) {
                 tasks = await App.GetTasksByDateFilter(dateFilter);
                 // Apply additional filters
@@ -301,11 +310,7 @@ class TodoApp {
             }
             
             this.tasks = tasks || [];
-            
-            // Use requestAnimationFrame for guaranteed rerender
-            requestAnimationFrame(() => {
-                this.renderTasks();
-            });
+            this.renderTasks();
             
         } catch (error) {
             console.error('Error loading tasks:', error);
@@ -316,17 +321,12 @@ class TodoApp {
     }
 
     // Filter tasks
-    filterTasks() {
-        this.loadTasks();
+    async filterTasks() {
+        await this.loadTasks();
     }
 
-    // Force UI update
-    forceUIUpdate() {
-        // Clear containers before updating
-        this.elements.activeTasksList.innerHTML = '';
-        this.elements.completedTasksList.innerHTML = '';
-        
-        // Render tasks again
+    // Render tasks with better DOM manipulation
+    renderTasks() {
         const activeTasks = this.tasks.filter(task => task.status === 'pending');
         const completedTasks = this.tasks.filter(task => task.status === 'completed');
         
@@ -334,28 +334,18 @@ class TodoApp {
         this.renderTaskList(completedTasks, this.elements.completedTasksList);
         
         // Update counters
-        this.elements.activeTaskCount.textContent = activeTasks.length;
-        this.elements.completedTaskCount.textContent = completedTasks.length;
-    }
-
-    // Render tasks
-    renderTasks() {
-        // Use requestAnimationFrame for guaranteed rerender
-        requestAnimationFrame(() => {
-            const activeTasks = this.tasks.filter(task => task.status === 'pending');
-            const completedTasks = this.tasks.filter(task => task.status === 'completed');
-            
-            this.renderTaskList(activeTasks, this.elements.activeTasksList);
-            this.renderTaskList(completedTasks, this.elements.completedTasksList);
-            
-            // Update counters
+        if (this.elements.activeTaskCount) {
             this.elements.activeTaskCount.textContent = activeTasks.length;
+        }
+        if (this.elements.completedTaskCount) {
             this.elements.completedTaskCount.textContent = completedTasks.length;
-        });
+        }
     }
 
     // Render task list
     renderTaskList(tasks, container) {
+        if (!container) return;
+        
         if (tasks.length === 0) {
             container.innerHTML = `
                 <div class="empty-state">
@@ -411,7 +401,7 @@ class TodoApp {
         `;
     }
 
-    // Save task with forced UI update
+    // Save task with comprehensive updates
     async saveTask() {
         const title = this.elements.taskTitle.value.trim();
         const description = this.elements.taskDescription.value.trim();
@@ -463,20 +453,31 @@ class TodoApp {
             
             this.clearForm();
             
-            // Force update all data
-            await Promise.all([
-                this.loadTasks(),
-                this.loadDashboardData()
-            ]);
-            
-            // Force UI update
-            this.forceUIUpdate();
+            // Comprehensive data reload
+            await this.refreshAllData();
             
         } catch (error) {
             console.error('Error saving task:', error);
             this.showToast('Ошибка сохранения задачи', 'error');
         } finally {
             this.setLoading(false);
+        }
+    }
+
+    // Refresh all data comprehensively
+    async refreshAllData() {
+        try {
+            // Always reload both dashboard and tasks data
+            await Promise.all([
+                this.loadDashboardData(),
+                this.loadTasks()
+            ]);
+            
+            // Small delay to ensure DOM updates
+            await new Promise(resolve => setTimeout(resolve, 100));
+            
+        } catch (error) {
+            console.error('Error refreshing all data:', error);
         }
     }
 
@@ -537,7 +538,7 @@ class TodoApp {
         this.currentEditId = null;
     }
 
-    // Toggle task status with forced UI update
+    // Toggle task status with comprehensive updates
     async toggleTaskStatus(taskId) {
         this.setLoading(true);
         
@@ -545,13 +546,8 @@ class TodoApp {
             await App.ToggleTaskComplete(taskId);
             this.showToast('Статус задачи изменен', 'success');
             
-            // Update data and force UI update
-            await Promise.all([
-                this.loadTasks(),
-                this.loadDashboardData()
-            ]);
-            
-            this.forceUIUpdate();
+            // Comprehensive data reload
+            await this.refreshAllData();
             
         } catch (error) {
             console.error('Error toggling task status:', error);
@@ -577,7 +573,7 @@ class TodoApp {
         this.currentDeleteId = null;
     }
 
-    // Confirm delete with forced UI update
+    // Confirm delete with comprehensive updates
     async confirmDelete() {
         if (!this.currentDeleteId) return;
         
@@ -589,13 +585,11 @@ class TodoApp {
             
             this.hideDeleteModal();
             
-            // Update data and force UI update
-            await Promise.all([
-                this.loadTasks(),
-                this.loadDashboardData()
-            ]);
+            // Comprehensive data reload
+            await this.refreshAllData();
             
-            this.forceUIUpdate();
+            // Show warning about UI update issue
+            this.showUpdateWarning();
             
         } catch (error) {
             console.error('Error deleting task:', error);
@@ -603,6 +597,89 @@ class TodoApp {
         } finally {
             this.setLoading(false);
         }
+    }
+
+    // Show warning about UI update issue (temporary solution)
+    showUpdateWarning() {
+        // Only show this warning occasionally, not every time
+        if (Math.random() < 0.3) { // 30% chance to show
+            this.showToast(
+                'Если изменения не отображаются, переключитесь между вкладками "Дашборд" и "Задачи" для обновления интерфейса', 
+                'warning', 
+                'Временная проблема с обновлением', 
+                7000 // Show for 7 seconds
+            );
+        }
+    }
+
+    // Show initial warning modal on app startup
+    showInitialWarningModal() {
+        // Check if warning was already shown in this session
+        if (sessionStorage.getItem('warningShown')) {
+            return;
+        }
+        
+        // Create warning modal
+        const warningModal = document.createElement('div');
+        warningModal.className = 'modal show';
+        warningModal.id = 'warningModal';
+        warningModal.innerHTML = `
+            <div class="modal-content" style="max-width: 500px;">
+                <div class="modal-header">
+                    <h3 style="color: var(--warning); display: flex; align-items: center; gap: 0.5rem;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width: 24px; height: 24px;">
+                            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                            <line x1="12" y1="9" x2="12" y2="13"/>
+                            <line x1="12" y1="17" x2="12.01" y2="17"/>
+                        </svg>
+                        Важное уведомление
+                    </h3>
+                </div>
+                <div class="modal-body">
+                    <p style="margin-bottom: 1rem; color: var(--text);">
+                        <strong>Внимание!</strong> В приложении есть известная проблема с обновлением интерфейса.
+                    </p>
+                    <p style="margin-bottom: 1rem; color: var(--text-secondary);">
+                        После выполнения операций (создание, редактирование, удаление задач) 
+                        изменения могут не отображаться сразу.
+                    </p>
+                    <div style="background: var(--bg-secondary); padding: 1rem; border-radius: var(--radius); border-left: 4px solid var(--warning); margin-bottom: 1rem;">
+                        <p style="color: var(--text); font-weight: 600; margin-bottom: 0.5rem;">
+                            Как исправить:
+                        </p>
+                        <p style="color: var(--text-secondary);">
+                            Переключайтесь между вкладками <strong>"Дашборд"</strong> и <strong>"Задачи"</strong> 
+                            для обновления отображаемых данных.
+                        </p>
+                    </div>
+                    <p style="color: var(--text-secondary); font-size: 0.875rem;">
+                        Мы работаем над исправлением этой проблемы.
+                    </p>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-primary" id="warningModalOk">Понятно</button>
+                </div>
+            </div>
+        `;
+        
+        // Add modal to page
+        document.body.appendChild(warningModal);
+        
+        // Add click handler for OK button
+      const okButton = warningModal.querySelector('.modal-footer button');
+
+
+        okButton.addEventListener('click', () => {
+            warningModal.remove();
+            sessionStorage.setItem('warningShown', 'true');
+        });
+        
+        // Prevent closing by clicking outside
+        warningModal.addEventListener('click', (e) => {
+            if (e.target === warningModal) {
+                // Do nothing - force user to click OK
+            }
+        });
     }
 
     // Toggle collapse
@@ -625,7 +702,7 @@ class TodoApp {
         this.elements.saveTaskBtn.disabled = !isValid;
         
         if (title.length > 255) {
-            this.elements.taskTitle.style.borderColor = 'var(--danger-color)';
+            this.elements.taskTitle.style.borderColor = 'var(--danger)';
         } else {
             this.elements.taskTitle.style.borderColor = '';
         }
@@ -637,7 +714,9 @@ class TodoApp {
         
         if (loading) {
             document.body.style.cursor = 'wait';
-            this.elements.saveTaskBtn.disabled = true;
+            if (this.elements.saveTaskBtn) {
+                this.elements.saveTaskBtn.disabled = true;
+            }
         } else {
             document.body.style.cursor = '';
             this.validateForm();
