@@ -25,6 +25,7 @@ type AppConfig struct {
 	Environment string `json:"environment"`
 }
 
+// reading an env file
 func New() *Config {
 	return &Config{
 		Database: DatabaseConfig{
@@ -43,6 +44,7 @@ func New() *Config {
 	}
 }
 
+// dns parsin for db connection
 func (c *Config) GetDSN() string {
 	return fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
 		c.Database.Host,
@@ -54,6 +56,7 @@ func (c *Config) GetDSN() string {
 	)
 }
 
+// function for reading from evn
 func getEnv(key, defaultValue string) string {
 	if value := os.Getenv(key); value != "" {
 		return value

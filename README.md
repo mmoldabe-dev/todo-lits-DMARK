@@ -1,19 +1,135 @@
-# README
+TodoApp – десктопное приложение для управления задачами
 
-## About
+TodoApp – это кроссплатформенное приложение для работы со списком задач, сделанное на Wails framework (Go + JavaScript).
+Приложение поддерживает создание, редактирование, удаление задач, отметку их как выполненных, а также фильтрацию и сортировку.
+Есть тёмная и светлая темы интерфейса.
 
-This is the official Wails Vanilla template.
+Что внутри
 
-You can configure the project by editing `wails.json`. More information about the project settings can be found
-here: https://wails.io/docs/reference/project-config
+Backend: Go (Wails)
 
-## Live Development
+Frontend: JavaScript + CSS
 
-To run in live development mode, run `wails dev` in the project directory. This will run a Vite development
-server that will provide very fast hot reload of your frontend changes. If you want to develop in a browser
-and have access to your Go methods, there is also a dev server that runs on http://localhost:34115. Connect
-to this in your browser, and you can call your Go code from devtools.
+База данных: PostgreSQL
 
-## Building
+Архитектура: Repository → Service → Usecase
 
-To build a redistributable, production mode package, use `wails build`.
+Требования
+
+Go 1.19+
+
+Node.js 16+
+
+PostgreSQL 12+
+
+Docker и Docker Compose
+
+Wails CLI v2
+
+Как запустить
+Быстрый старт
+git clone <repository-url>
+cd todoapp
+
+make start
+
+Альтернативный запуск
+docker-compose up --build -d
+wails dev
+
+ Что реализовано
+Интерфейс
+
+Поле для ввода задач + кнопка добавления
+
+Список задач с выделением выполненных
+
+Стилизация на CSS
+
+Светлая и тёмная темы
+
+Адаптивная верстка
+
+Работа с задачами
+
+Добавление задач (с проверкой на пустой ввод)
+
+Редактирование задач
+
+Удаление с подтверждением (модальное окно)
+
+Отметка выполнения + перенос в отдельный список
+
+Возможность вернуть задачу в активные
+
+Хранение
+
+Все задачи сохраняются в PostgreSQL
+
+Используется архитектура repo → service → usecase
+
+Дополнительно
+
+Приоритет задач (низкий / средний / высокий)
+
+Дата и время выполнения
+
+Фильтрация по статусу и дате
+
+Сортировка по дате создания и приоритету
+
+ Возможности
+
+Дашборд со статистикой (всего, выполнено, в работе, просрочено)
+
+Быстрое добавление задач
+
+Удобное редактирование и удаление
+
+Фильтрация и сортировка по статусу, дате и приоритету
+
+Уведомления (toast) и модальные окна
+
+Поддержка светлой и тёмной темы
+
+ Известные проблемы
+
+После добавления/удаления задачи список не всегда обновляется автоматически — приходится переключаться между вкладками
+
+Возможны задержки при синхронизации состояния между компонентами
+
+Кнопки закрытия/сворачивания окна появляются только после изменения размера
+
+ Команды разработки
+# dev-режим
+wails dev
+
+# сборка
+wails build
+
+# только база
+docker-compose up postgres -d
+
+# стоп
+docker-compose down
+
+# пересборка
+docker-compose up --build -d
+
+Скриншоты и видео
+
+(добавить вручную)
+
+Дашборд со статистикой
+
+Список задач
+
+Форма добавления/редактирования
+
+Фильтры и сортировка
+
+Светлая и тёмная темы
+
+Автор
+
+Проект выполнен в рамках тестового задания.

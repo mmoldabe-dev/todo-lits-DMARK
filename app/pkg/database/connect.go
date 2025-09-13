@@ -18,6 +18,7 @@ type Database struct {
 	DB *sql.DB
 }
 
+// connecting to db
 func New(cfg *config.Config) (*Database, error) {
 	db, err := sql.Open("postgres", cfg.GetDSN())
 	if err != nil {
@@ -40,6 +41,7 @@ func New(cfg *config.Config) (*Database, error) {
 	return database, nil
 }
 
+// migration
 func (d *Database) RunMigrations() error {
 	driver, err := postgres.WithInstance(d.DB, &postgres.Config{})
 	if err != nil {
